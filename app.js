@@ -6,11 +6,10 @@ const fs = require("fs");
 const cors = require("cors");
 const app = express();
 
-// Middleware setup
+// Middleware setup - ensure these come before route definitions
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static("uploads"));
 
 const PORT = process.env.PORT || 9000;
 
@@ -59,75 +58,79 @@ const multiUpload = upload.fields([
   { name: "audio" },
 ]);
 
-app
-  .route("/")
-  .get(async (req, res) => {
-    try {
-      res.status(200).send("Hello from world!");
-    } catch (error) {
-      res.status(500).send(error.message);
-    }
-  })
-  .post(async (req, res) => {
-    try {
-      res.status(200).send("Hello from world!");
-    } catch (error) {
-      res.status(500).send(error.message);
-    }
-  });
+// Serve static files - ensure this comes before route definitions
+app.use("/uploads", express.static("uploads"));
 
-app
-  .route("/test-create-post")
-  .get(async (req, res) => {
-    res.send("Hello test");
-  })
-  .post(async (req, res) => {
-    res.send("Hello test");
-  });
+// Root route - defined independently for GET and POST
+app.get("/", (req, res) => {
+  try {
+    res.status(200).send("Hello from world! (GET)");
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
 
-app
-  .route("/posts")
-  .get(async (req, res) => {
-    try {
-      const posts = await Post.find();
-      res.status(200).json(posts);
-    } catch (error) {
-      res.status(500).send(error.message);
-    }
-  })
-  .post(multiUpload, async (req, res) => {
-    try {
-      const { title, body } = req.body;
-      const images =
-        req.files && req.files["images"]
-          ? req.files["images"].map((file) => file.path)
-          : [];
-      const videos =
-        req.files && req.files["videos"]
-          ? req.files["videos"].map((file) => file.path)
-          : [];
-      const audio =
-        req.files && req.files["audio"]
-          ? req.files["audio"].map((file) => file.path)
-          : [];
+app.post("/", (req, res) => {
+  try {
+    res.status(200).send("Hello from world! (POST)");
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
 
-      const newPost = new Post({
-        title,
-        body,
-        images,
-        videos,
-        audio,
-      });
+// Test route - defined independently for GET and POST
+app.get("/test-create-post", (req, res) => {
+  res.send("Hello test (GET)");
+});
 
-      await newPost.save();
-      res.status(201).send("Post created successfully");
-    } catch (error) {
-      console.error("Post creation error:", error);
-      res.status(500).send(error.message);
-    }
-  });
+app.post("/test-create-post", (req, res) => {
+  res.send("Hello test (POST)");
+});
 
-app.route("/post/:id").get(async (req, res) => {
+// Posts routes
+app.get("/posts", async (req, res) => {
+  try {
+    const posts = await Post.find();
+    res.status(200).json(posts);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+app.post("/posts", multiUpload, async (req, res) => {
+  try {
+    const { title, body } = req.body;
+    const images =
+      req.files && req.files["images"]
+        ? req.files["images"].map((file) => file.path)
+        : [];
+    const videos =
+      req.files && req.files["videos"]
+        ? req.files["videos"].map((file) => file.path)
+        : [];
+    const audio =
+      req.files && req.files["audio"]
+        ? req.files["audio"].map((file) => file.path)
+        : [];
+
+    const newPost = new Post({
+      title,
+      body,
+      images,
+      videos,
+      audio,
+    });
+
+    await newPost.save();
+    res.status(201).send("Post created successfully");
+  } catch (error) {
+    console.error("Post creation error:", error);
+    res.status(500).send(error.message);
+  }
+});
+
+// Single post routes
+app.get("/post/:id", async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -139,6 +142,19 @@ app.route("/post/:id").get(async (req, res) => {
   }
 });
 
+app.post("/post/:id", async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).send("Post not found");
+    }
+    res.status(200).json(post);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// Starting the server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

@@ -50,7 +50,9 @@ const multiUpload = upload.fields([
   { name: "videos" },
   { name: "audio" },
 ]);
-
+app.post("/test-create-post", async (req, res) => {
+  res.send("Hello test");
+});
 app.post("/create-post", multiUpload, async (req, res) => {
   try {
     const { title, body } = req.body;

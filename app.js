@@ -43,6 +43,10 @@ const upload = multer({
   limits: { fileSize: 5000 * 1024 * 1024 }, // 5000MB in bytes
 });
 
+app.post("/test-create-post", async (req, res) => {
+  res.send("Hello test");
+});
+
 app.use("/uploads", express.static("uploads"));
 
 const multiUpload = upload.fields([
@@ -50,9 +54,7 @@ const multiUpload = upload.fields([
   { name: "videos" },
   { name: "audio" },
 ]);
-app.post("/test-create-post", async (req, res) => {
-  res.send("Hello test");
-});
+
 app.post("/create-post", multiUpload, async (req, res) => {
   try {
     const { title, body } = req.body;

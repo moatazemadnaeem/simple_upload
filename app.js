@@ -49,7 +49,7 @@ const multiUpload = upload.fields([
   { name: "audio" },
 ]);
 
-app.post("/post", multiUpload, async (req, res) => {
+app.post("/create-post", multiUpload, async (req, res) => {
   try {
     const { title, body } = req.body;
     const images = req.files["images"]

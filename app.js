@@ -45,7 +45,7 @@ const upload = multer({
   limits: { fileSize: 5000 * 1024 * 1024 }, // 5000MB in bytes
 });
 
-app.post("/test-create-post", async (req, res) => {
+app.get("/test-create-post", async (req, res) => {
   res.send("Hello test");
 });
 

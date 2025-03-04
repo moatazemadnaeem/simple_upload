@@ -6,6 +6,8 @@ const fs = require("fs");
 const cors = require("cors");
 const app = express();
 app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 const PORT = process.env.PORT || 9000;
 
 if (!fs.existsSync("uploads")) {

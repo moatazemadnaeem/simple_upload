@@ -3,7 +3,9 @@ const multer = require("multer");
 const mongoose = require("mongoose");
 const path = require("path");
 const fs = require("fs");
+const cors = require("cors");
 const app = express();
+app.use(cors());
 const PORT = process.env.PORT || 9000;
 
 if (!fs.existsSync("uploads")) {

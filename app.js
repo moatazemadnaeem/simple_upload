@@ -96,7 +96,26 @@ app.get("/posts", async (req, res) => {
     res.status(500).send(error.message);
   }
 });
+app.get("/posts/search", async (req, res) => {
+  try {
+    const searchQuery = req.query.search;
 
+    if (!searchQuery) {
+      return res.status(400).send("Search query is required");
+    }
+
+    const searchRegex = new RegExp(searchQuery, "i");
+
+    const posts = await Post.find({
+      $or: [{ title: searchRegex }, { body: searchRegex }],
+    });
+
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).send(error.message);
+  }
+});
 app.post("/posts", multiUpload, async (req, res) => {
   try {
     const { title, body } = req.body;

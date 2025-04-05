@@ -15,14 +15,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static("uploads"));
 
-const PORT = process.env.PORT || 9000;
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+const PORT = process.env.PORT;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // MongoDB Connection
-mongoose.connect(
-  process.env.MONGO_URL ||
-    "mongodb+srv://moatazlabs:c6cbTO9nUuRo6zHh@cluster0.k33hd.mongodb.net/"
-);
+mongoose.connect(process.env.MONGO_URL);
 
 // Schemas
 const userSchema = new mongoose.Schema({

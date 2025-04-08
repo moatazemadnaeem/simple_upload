@@ -1,11 +1,11 @@
 const express = require("express");
-const multer = require("multer");
 const mongoose = require("mongoose");
-const path = require("path");
-const fs = require("fs");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const multer = require("multer");
 
 const app = express();
 
@@ -13,16 +13,34 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static("uploads"));
 
-const PORT = process.env.PORT || "9000";
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const PORT = process.env.PORT;
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Cloudinary Configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Cloudinary Storage Configuration
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "uploads",
+    allowed_formats: ["jpg", "png", "jpeg"],
+    public_id: (req, file) => Date.now() + "-" + file.originalname,
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
+});
 
 // MongoDB Connection
-mongoose.connect(
-  process.env.MONGO_URL ||
-    "mongodb+srv://moatazlabs:c6cbTO9nUuRo6zHh@cluster0.k33hd.mongodb.net/"
-);
+mongoose.connect(process.env.MONGO_URL);
 
 // Schemas
 const userSchema = new mongoose.Schema({
@@ -67,15 +85,6 @@ const Font = mongoose.model("Font", fontSchema);
 const Platform = mongoose.model("Platform", platformSchema);
 const Contact = mongoose.model("Contact", contactSchema);
 
-// Multer Configuration
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage, limits: { fileSize: 5000 * 1024 * 1024 } });
-
 // Authentication Middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["token"];
@@ -97,7 +106,7 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// User Routes (unchanged)
+// User Routes
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -123,24 +132,27 @@ app.post("/signin", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 app.get("/get-current-user", authenticateToken, async (req, res) => {
   if (!req.user) return res.status(401).json({ message: "Unauthorized" });
   const { password, __v, ...rest } = await User.findById(req.user.id).lean();
   res.json(rest);
 });
+
 app.post("/logout", authenticateToken, (req, res) => {
   res.json({ message: "Logout successful", token: null });
 });
 
 app.get("/users", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const users = await User.find().lean(); // Get plain objects
-    const sanitizedUsers = users.map(({ password, __v, ...rest }) => rest); // Remove password and __v
+    const users = await User.find().lean();
+    const sanitizedUsers = users.map(({ password, __v, ...rest }) => rest);
     res.json(sanitizedUsers);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
+
 app.delete("/users/:id", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
@@ -150,6 +162,7 @@ app.delete("/users/:id", authenticateToken, requireAdmin, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 app.get("/users/:id", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).lean();
@@ -160,6 +173,7 @@ app.get("/users/:id", authenticateToken, requireAdmin, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 app.put(
   "/users/:id/admin",
   authenticateToken,
@@ -172,24 +186,22 @@ app.put(
         { new: true }
       ).lean();
       if (!user) return res.status(404).json({ message: "User not found" });
-      const { password, __v, ...rest } = user; // Remove password and __v
+      const { password, __v, ...rest } = user;
       res.json(rest);
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   }
 );
+
 app.put("/users/:id", authenticateToken, async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
-    // Build update object dynamically based on provided fields
     const updateData = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (password) updateData.password = await bcrypt.hash(password, 10);
 
-    // Check if there's anything to update
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ message: "No fields provided for update" });
     }
@@ -201,8 +213,7 @@ app.put("/users/:id", authenticateToken, async (req, res) => {
     ).lean();
 
     if (!user) return res.status(404).json({ message: "User not found" });
-
-    const { password: _, __v, ...rest } = user; // Remove password and __v
+    const { password: _, __v, ...rest } = user;
     res.json(rest);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -350,6 +361,7 @@ app.put(
     }
   }
 );
+
 app.delete(
   "/podcasts/:id/questions/:qId",
   authenticateToken,
@@ -372,7 +384,7 @@ app.delete(
   }
 );
 
-// Platform Routes (single record)
+// Platform Routes
 app.post(
   "/platform",
   authenticateToken,
@@ -380,9 +392,12 @@ app.post(
   upload.single("image"),
   async (req, res) => {
     try {
-      await Platform.deleteMany({}); // Ensure only one record
+      await Platform.deleteMany({});
       const { text } = req.body;
-      const platform = new Platform({ text, image: req.file?.path });
+      const platform = new Platform({
+        text,
+        image: req.file?.path,
+      });
       await platform.save();
       res.status(201).json(platform);
     } catch (error) {
@@ -415,6 +430,7 @@ app.put(
     }
   }
 );
+
 app.delete(
   "/platform/:id",
   authenticateToken,
@@ -430,6 +446,7 @@ app.delete(
     }
   }
 );
+
 app.get("/platform", async (req, res) => {
   try {
     const platform = await Platform.findOne();
@@ -439,10 +456,10 @@ app.get("/platform", async (req, res) => {
   }
 });
 
-// Contact Routes (single record)
+// Contact Routes
 app.post("/contact", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    await Contact.deleteMany({}); // Ensure only one record
+    await Contact.deleteMany({});
     const { text } = req.body;
     const contact = new Contact({ text });
     await contact.save();
@@ -451,6 +468,7 @@ app.post("/contact", authenticateToken, requireAdmin, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 app.get("/contact", async (req, res) => {
   try {
     const contact = await Contact.findOne();
@@ -459,6 +477,7 @@ app.get("/contact", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 app.put("/contact/:id", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const updateData = {};
@@ -475,6 +494,7 @@ app.put("/contact/:id", authenticateToken, requireAdmin, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 app.delete(
   "/contact/:id",
   authenticateToken,
@@ -491,10 +511,10 @@ app.delete(
   }
 );
 
-// Font Routes (single record)
+// Font Routes
 app.post("/fonts", authenticateToken, requireAdmin, async (req, res) => {
   try {
-    await Font.deleteMany({}); // Ensure only one record
+    await Font.deleteMany({});
     const { fontColor, fontSize, fontFamily } = req.body;
     const font = new Font({ fontColor, fontSize, fontFamily });
     await font.save();
@@ -503,6 +523,7 @@ app.post("/fonts", authenticateToken, requireAdmin, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 app.get("/fonts", async (req, res) => {
   try {
     const font = await Font.findOne();
@@ -511,6 +532,7 @@ app.get("/fonts", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 app.put("/fonts/:id", authenticateToken, requireAdmin, async (req, res) => {
   try {
     const updateData = {};

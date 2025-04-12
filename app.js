@@ -14,14 +14,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const PORT = process.env.PORT;
-const JWT_SECRET = process.env.JWT_SECRET;
+const PORT = process.env.PORT || "9000";
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 // Cloudinary Configuration
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "dlvpxvcor",
+  api_key: process.env.CLOUDINARY_API_KEY || "397861572619641",
+  api_secret: process.env.CLOUDINARY_API_SECRET || "8qiDf4bOWY88K8pUQLNx",
 });
 
 // Cloudinary Storage Configuration
@@ -40,7 +40,10 @@ const upload = multer({
 });
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URL);
+mongoose.connect(
+  process.env.MONGO_URL ||
+    "mongodb+srv://moatazlabs:c6cbTO9nUuRo6zHh@cluster0.k33hd.mongodb.net/"
+);
 
 // Schemas
 const userSchema = new mongoose.Schema({
@@ -244,7 +247,7 @@ app.post(
 
 app.get("/podcasts", async (req, res) => {
   try {
-    const podcasts = await Podcast.find();
+    const podcasts = await Podcast.find().sort({ _id: -1 });
     res.json(podcasts);
   } catch (error) {
     res.status(500).json({ message: error.message });

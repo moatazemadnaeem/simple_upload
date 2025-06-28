@@ -15,7 +15,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(fileUpload());
+app.use(fileUpload({
+  useTempFiles: true,
+  tempFileDir: '/tmp/'
+}));
 const PORT = process.env.PORT || "9000";
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 

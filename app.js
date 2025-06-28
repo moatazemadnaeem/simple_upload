@@ -24,20 +24,24 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || "8qiDf4bOWY88K8pUQLNx",
 });
 
-// Cloudinary Storage Configuration
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "uploads",
-    allowed_formats: ["jpg", "png", "jpeg"],
-    public_id: (req, file) => Date.now() + "-" + file.originalname,
-  },
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB limit
-});
+// Modified file upload handler
+const handleFileUpload = async (file) => {
+  if (!file) return null;
+  
+  // Convert buffer to data URI if needed
+  const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+  
+  try {
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder: "uploads",
+      public_id: Date.now() + "-" + file.originalname,
+    });
+    return result.secure_url;
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    throw error;
+  }
+};
 
 // MongoDB Connection
 mongoose.connect(
@@ -228,15 +232,19 @@ app.post(
   "/podcasts",
   authenticateToken,
   requireAdmin,
-  upload.single("image"),
   async (req, res) => {
     try {
-      console.log("File received:", req.file);
       const { name, content } = req.body;
+      let imageUrl = null;
+      
+      if (req.files && req.files.image) {
+        imageUrl = await handleFileUpload(req.files.image);
+      }
+
       const podcast = new Podcast({
         name,
         content,
-        image: req.file?.path,
+        image: imageUrl,
       });
       await podcast.save();
       res.status(201).json(podcast);
@@ -271,13 +279,15 @@ app.put(
   "/podcasts/:id",
   authenticateToken,
   requireAdmin,
-  upload.single("image"),
   async (req, res) => {
     try {
       const updateData = {};
       if (req.body.name) updateData.name = req.body.name;
       if (req.body.content) updateData.content = req.body.content;
-      if (req.file) updateData.image = req.file.path;
+      
+      if (req.files && req.files.image) {
+        updateData.image = await handleFileUpload(req.files.image);
+      }
 
       const podcast = await Podcast.findByIdAndUpdate(
         req.params.id,
@@ -393,14 +403,19 @@ app.post(
   "/platform",
   authenticateToken,
   requireAdmin,
-  upload.single("image"),
   async (req, res) => {
     try {
       await Platform.deleteMany({});
       const { text } = req.body;
+      let imageUrl = null;
+      
+      if (req.files && req.files.image) {
+        imageUrl = await handleFileUpload(req.files.image);
+      }
+
       const platform = new Platform({
         text,
-        image: req.file?.path,
+        image: imageUrl,
       });
       await platform.save();
       res.status(201).json(platform);
@@ -414,12 +429,14 @@ app.put(
   "/platform/:id",
   authenticateToken,
   requireAdmin,
-  upload.single("image"),
   async (req, res) => {
     try {
       const updateData = {};
       if (req.body.text) updateData.text = req.body.text;
-      if (req.file) updateData.image = req.file.path;
+      
+      if (req.files && req.files.image) {
+        updateData.image = await handleFileUpload(req.files.image);
+      }
 
       const platform = await Platform.findByIdAndUpdate(
         req.params.id,

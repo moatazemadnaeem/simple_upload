@@ -35,17 +35,24 @@ cloudinary.config({
 const handleFileUpload = async (file) => {
   if (!file) return null;
 
-  try {
-    // Use the temporary file path that express-fileupload creates
-    const result = await cloudinary.uploader.upload(file.tempFilePath, {
-      public_id: Date.now() + "-" + file.name,
-      resource_type: "auto"
-    });
-    return result.secure_url;
-  } catch (error) {
-    console.error("Upload error:", error.message);
-    throw new Error("Failed to upload image");
-  }
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        public_id: Date.now() + "-" + file.name,
+        resource_type: "auto"
+      },
+      (error, result) => {
+        if (error) {
+          console.error("Cloudinary error:", error);
+          reject(error);
+        } else {
+          resolve(result.secure_url);
+        }
+      }
+    );
+    
+    uploadStream.end(file.data);
+  });
 };
 // MongoDB Connection
 mongoose.connect(

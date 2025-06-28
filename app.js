@@ -6,6 +6,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const fileUpload = require('express-fileupload');
+
 
 const app = express();
 
@@ -13,7 +15,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(fileUpload());
 const PORT = process.env.PORT || "9000";
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 

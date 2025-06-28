@@ -33,12 +33,30 @@ cloudinary.config({
 
 
 const handleFileUpload = async (file) => {
-  if (!file) return null;
+  console.log("=== FILE DEBUG ===");
+  console.log("File exists:", !!file);
+  
+  if (!file) {
+    console.log("No file provided");
+    return null;
+  }
+
+  console.log("File properties:", {
+    name: file.name,
+    mimetype: file.mimetype,
+    size: file.size,
+    hasData: !!file.data,
+    dataLength: file.data ? file.data.length : 0,
+    hasTempFilePath: !!file.tempFilePath
+  });
+
+  if (!file.data || file.data.length === 0) {
+    throw new Error("File data is empty or missing");
+  }
 
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        public_id: Date.now() + "-" + file.name,
         resource_type: "auto"
       },
       (error, result) => {
@@ -46,6 +64,7 @@ const handleFileUpload = async (file) => {
           console.error("Cloudinary error:", error);
           reject(error);
         } else {
+          console.log("Upload successful:", result.secure_url);
           resolve(result.secure_url);
         }
       }

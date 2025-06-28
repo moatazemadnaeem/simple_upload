@@ -26,7 +26,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret";
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "dlvpxvcor",
   api_key: process.env.CLOUDINARY_API_KEY || "397861572619641",
-  api_secret: process.env.CLOUDINARY_API_SECRET || "8qiDf4bOWY88K8pUQLNx",
+  api_secret: process.env.CLOUDINARY_API_SECRET || "8qiDf4bOWY88K8pUQLNx-15Qea8",
 });
 
 

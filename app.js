@@ -35,14 +35,12 @@ cloudinary.config({
 const handleFileUpload = async (file) => {
   if (!file) return null;
 
-  // Convert buffer to data URI if needed
-  const dataUri = `data:${file.mimetype};base64,${file.buffer.toString(
-    "base64"
-  )}`;
+  // For express-fileupload, use 'data' property instead of 'buffer'
+  const dataUri = `data:${file.mimetype};base64,${file.data.toString("base64")}`;
 
   try {
     const result = await cloudinary.uploader.upload(dataUri, {
-      public_id: Date.now() + "-" + file.originalname,
+      public_id: Date.now() + "-" + file.name, // use 'name' instead of 'originalname'
     });
     return result.secure_url;
   } catch (error) {

@@ -234,7 +234,6 @@ app.post(
   "/podcasts",
   authenticateToken,
   requireAdmin,
-  upload.single("image"),
   async (req, res) => {
     try {
       console.log("File received:", req.file);
@@ -282,7 +281,6 @@ app.put(
   "/podcasts/:id",
   authenticateToken,
   requireAdmin,
-  upload.single("image"),
   async (req, res) => {
     try {
       const updateData = {};
@@ -406,7 +404,6 @@ app.post(
   "/platform",
   authenticateToken,
   requireAdmin,
-  upload.single("image"),
   async (req, res) => {
     try {
       await Platform.deleteMany({});
@@ -432,7 +429,6 @@ app.put(
   "/platform/:id",
   authenticateToken,
   requireAdmin,
-  upload.single("image"),
   async (req, res) => {
     try {
       const updateData = {};

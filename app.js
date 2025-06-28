@@ -231,6 +231,7 @@ app.post(
   upload.single("image"),
   async (req, res) => {
     try {
+      console.log("File received:", req.file);
       const { name, content } = req.body;
       const podcast = new Podcast({
         name,

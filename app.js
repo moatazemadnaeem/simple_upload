@@ -1,3 +1,4 @@
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -5,7 +6,6 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const multer = require("multer");
 
 const app = express();
 
@@ -24,16 +24,19 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || "8qiDf4bOWY88K8pUQLNx",
 });
 
-// Modified file upload handler
+
+
+
 const handleFileUpload = async (file) => {
   if (!file) return null;
-  
+
   // Convert buffer to data URI if needed
-  const dataUri = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-  
+  const dataUri = `data:${file.mimetype};base64,${file.buffer.toString(
+    "base64"
+  )}`;
+
   try {
     const result = await cloudinary.uploader.upload(dataUri, {
-      folder: "uploads",
       public_id: Date.now() + "-" + file.originalname,
     });
     return result.secure_url;
@@ -42,7 +45,6 @@ const handleFileUpload = async (file) => {
     throw error;
   }
 };
-
 // MongoDB Connection
 mongoose.connect(
   process.env.MONGO_URL ||
@@ -232,15 +234,16 @@ app.post(
   "/podcasts",
   authenticateToken,
   requireAdmin,
+  upload.single("image"),
   async (req, res) => {
     try {
+      console.log("File received:", req.file);
       const { name, content } = req.body;
       let imageUrl = null;
-      
+
       if (req.files && req.files.image) {
         imageUrl = await handleFileUpload(req.files.image);
       }
-
       const podcast = new Podcast({
         name,
         content,
@@ -279,12 +282,12 @@ app.put(
   "/podcasts/:id",
   authenticateToken,
   requireAdmin,
+  upload.single("image"),
   async (req, res) => {
     try {
       const updateData = {};
       if (req.body.name) updateData.name = req.body.name;
       if (req.body.content) updateData.content = req.body.content;
-      
       if (req.files && req.files.image) {
         updateData.image = await handleFileUpload(req.files.image);
       }
@@ -403,16 +406,16 @@ app.post(
   "/platform",
   authenticateToken,
   requireAdmin,
+  upload.single("image"),
   async (req, res) => {
     try {
       await Platform.deleteMany({});
       const { text } = req.body;
       let imageUrl = null;
-      
+
       if (req.files && req.files.image) {
         imageUrl = await handleFileUpload(req.files.image);
       }
-
       const platform = new Platform({
         text,
         image: imageUrl,
@@ -429,15 +432,14 @@ app.put(
   "/platform/:id",
   authenticateToken,
   requireAdmin,
+  upload.single("image"),
   async (req, res) => {
     try {
       const updateData = {};
       if (req.body.text) updateData.text = req.body.text;
-      
       if (req.files && req.files.image) {
         updateData.image = await handleFileUpload(req.files.image);
       }
-
       const platform = await Platform.findByIdAndUpdate(
         req.params.id,
         { $set: updateData },

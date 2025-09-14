@@ -16,14 +16,14 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload());
-const PORT = process.env.PORT || "9000";
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const PORT = process.env.PORT;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Cloudinary Configuration
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "dlvpxvcor",
-  api_key: process.env.CLOUDINARY_API_KEY || "397861572619641",
-  api_secret: process.env.CLOUDINARY_API_SECRET || "8qiDf4bOWY88K8pUQLNx-15Qea8",
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 
@@ -72,8 +72,7 @@ const handleFileUpload = async (file) => {
 };
 // MongoDB Connection
 mongoose.connect(
-  process.env.MONGO_URL ||
-    "mongodb+srv://moatazlabs:c6cbTO9nUuRo6zHh@cluster0.k33hd.mongodb.net/"
+  process.env.MONGO_URL
 );
 
 // Schemas
